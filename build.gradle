@@ -1,0 +1,78 @@
+buildscript {
+
+    ext {
+        // Project builds successfully with 2.0.5.RELEASE and all tests pass, but upgrading to 2.1.1.RELEASE causes tests to fail
+        springBootVersion = '2.1.1.RELEASE'
+        groovyVersion = '2.5.4'
+    }
+
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+    }
+
+}
+
+apply plugin: 'groovy'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+group 'bug.sample'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    jcenter()
+}
+
+ext['groovy.version'] = groovyVersion
+
+dependencies {
+
+    compile "org.codehaus.groovy:groovy-all:${groovyVersion}"
+    compile "org.springframework.boot:spring-boot-starter-data-mongodb:${springBootVersion}"
+    compile "org.springframework.boot:spring-boot-starter-web:${springBootVersion}"
+
+    testCompile 'org.spockframework:spock-core:1.2-groovy-2.5'
+    testCompile 'org.spockframework:spock-spring:1.2-groovy-2.5'
+    testCompile "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
+
+}
+
+compileGroovy {
+    configure(groovyOptions) {
+        configurationScript = file("$rootDir/gradle/groovy/compiler-config.groovy")
+    }
+}
+
+configurations {
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+sourceSets {
+    integrationTest {
+        groovy {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integrationTest/groovy')
+        }
+    }
+}
+
+task integrationTest(type: Test) {
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+}
+
+check.dependsOn integrationTest
+integrationTest.mustRunAfter test
+
+
